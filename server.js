@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import React from 'react';
+import { ServerStyleSheet } from 'styled-components';
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom';
 import App from './src/App';
@@ -13,11 +14,14 @@ app.use(express.static('./build', { index: false }));
 
 // Todas las rutas devolvera el HTML
 app.get('/*', (req, res) => {
-  // render es una funcion a la que le podemos pasar jsx y lo renderizara como html
+  const sheet = new ServerStyleSheet();
+
   const reactApp = renderToString(
-    <StaticRouter location={req.url}>
-      <App />
-    </StaticRouter>
+    sheet.collectStyles(
+      <StaticRouter location={req.url}>
+        <App />
+      </StaticRouter>
+    )
   );
 
   // Load el index.html
@@ -30,7 +34,9 @@ app.get('/*', (req, res) => {
 
     // Devolvemos el contenido del templateFile con el div reemplazado por nuestra app
     return res.send(
-      data.replace('<div id="root"></div>', `<div id="root">${reactApp}</div>`)
+      data
+        .replace('<div id="root"></div>', `<div id="root">${reactApp}</div>`)
+        .replace('{{styles}}', sheet.getStyleTags())
     );
   });
 });
